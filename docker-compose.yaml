@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+  reminderbot:
+    image: youkoulayley/reminderbot:latest
+    command:
+      - run
+    environment:
+      BOT_TOKEN: "<REPLACE_BOT_TOKEN>"
+      CHANNEL_ID: "<REPLACE_CHANNEL_ID>"
+      MONGO_URI: "mongodb://mongoadmin:secret@mongo:27017"
+
+  mongo:
+    image: mongo:4.4
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongoadmin
+      MONGO_INITDB_ROOT_PASSWORD: secret
