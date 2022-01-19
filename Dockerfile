@@ -4,6 +4,6 @@ RUN apk --no-cache --no-progress add ca-certificates tzdata  \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-COPY reminderbot .
+COPY pet-reminder-bot .
 
-ENTRYPOINT ["/reminderbot"]
+ENTRYPOINT ["/pet-reminder-bot"]

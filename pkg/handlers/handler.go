@@ -2,23 +2,30 @@ package handlers
 
 import (
 	"context"
+	"time"
 
-	"github.com/youkoulayley/reminderbot/pkg/store"
+	"github.com/skwair/harmony"
+	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 )
 
 // Handler represents a Discord Handler.
 type Handler struct {
-	store     Storer
-	reminder  Reminder
-	channelID string
+	bot      *harmony.User
+	discord  Discord
+	store    Storer
+	reminder Reminder
+
+	timezone *time.Location
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(s Storer, r Reminder, channelID string) Handler {
+func NewHandler(b *harmony.User, d Discord, s Storer, r Reminder, tz *time.Location) Handler {
 	return Handler{
-		store:     s,
-		reminder:  r,
-		channelID: channelID,
+		bot:      b,
+		discord:  d,
+		store:    s,
+		reminder: r,
+		timezone: tz,
 	}
 }
 
@@ -36,4 +43,10 @@ type Storer interface {
 // Reminder is capable of interacting with the reminder.
 type Reminder interface {
 	SetUpdate()
+}
+
+// Discord is capable of interacting with Discord.
+type Discord interface {
+	Message(ctx context.Context, id string) (*harmony.Message, error)
+	SendMessage(ctx context.Context, text string) (*harmony.Message, error)
 }

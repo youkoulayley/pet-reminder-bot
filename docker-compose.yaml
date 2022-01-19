@@ -2,12 +2,13 @@ version: "3.7"
 
 services:
   reminderbot:
-    image: youkoulayley/reminderbot:latest
+    image: youkoulayley/pet-reminder-bot:latest
     command:
       - run
     environment:
       BOT_TOKEN: "<REPLACE_BOT_TOKEN>"
-      CHANNEL_ID: "<REPLACE_CHANNEL_ID>"
+      BOT_CHANNEL_ID: "<REPLACE_CHANNEL_ID>"
+      BOT_TIMEZONE: "Europe/Paris"
       MONGO_URI: "mongodb://mongoadmin:secret@mongo:27017"
 
   mongo:

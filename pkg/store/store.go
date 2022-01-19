@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	databaseName     = "reminderbot"
 	petCollection    = "pets"
 	remindCollection = "reminds"
 )
@@ -25,7 +24,7 @@ type Store struct {
 }
 
 // New creates a new Store.
-func New(client *mongo.Client) (Store, error) {
+func New(client *mongo.Client, databaseName string) (Store, error) {
 	return Store{
 		client:  client,
 		pets:    client.Database(databaseName).Collection(petCollection),
@@ -58,7 +57,24 @@ func (s *Store) Bootstrap(ctx context.Context) error {
 }
 
 func (s *Store) initData(ctx context.Context) error {
-	pets := []Pet{
+	p := pets()
+
+	for _, pet := range p {
+		pet.ID = primitive.NewObjectID()
+		if _, err := s.pets.InsertOne(ctx, pet); err != nil {
+			if isMongoDBDuplicateError(err) {
+				continue
+			}
+
+			return fmt.Errorf("insert document: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func pets() Pets {
+	return Pets{
 		{
 			Name:            "Chacha",
 			FoodMinDuration: 5 * time.Hour,
@@ -270,18 +286,4 @@ func (s *Store) initData(ctx context.Context) error {
 			StatsMax:        map[string]int{"pourcentage_dommage": 50},
 		},
 	}
-
-	for _, pet := range pets {
-		pet.ID = primitive.NewObjectID()
-		_, err := s.pets.InsertOne(ctx, pet)
-		if err != nil {
-			if isMongoDBDuplicateError(err) {
-				continue
-			}
-
-			return fmt.Errorf("insert document: %w", err)
-		}
-	}
-
-	return nil
 }

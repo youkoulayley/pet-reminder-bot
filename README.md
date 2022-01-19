@@ -46,4 +46,9 @@ You can use the docker compose to run the bot. It requires a mongo database for 
 and allows the restart of the bot).
 You just have to change :
   - The `BOT_TOKEN`: token of the bot on Discord.
-  - The `CHANNEL_ID`: channel where the bot will write its messages.
+  - The `BOT_CHANNEL_ID`: channel where the bot will write its messages.
+  - The `BOT_TIMEZONE`: timezone for discord messages.
+
+## Ideas
+- Sent reminder by MP
+- List reminders for a discord User

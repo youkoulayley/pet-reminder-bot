@@ -5,12 +5,12 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
-	"github.com/youkoulayley/reminderbot/cmd/run"
+	"github.com/youkoulayley/pet-reminder-bot/cmd/run"
 )
 
 func main() {
 	app := &cli.App{
-		Name: "Reminder Bot",
+		Name: "Pet Reminder Bot",
 		Commands: []*cli.Command{
 			run.Command(),
 		},
@@ -18,6 +18,7 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal().Err(err).Msg("Error during execution")
+
 		return
 	}
 }
