@@ -2,11 +2,13 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Pet represents a pet.
@@ -42,7 +44,7 @@ func (s *Store) ListPets(ctx context.Context) (Pets, error) {
 
 	var pets Pets
 	if err = req.All(ctx, &pets); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode pets: %w", err)
 	}
 
 	return pets, nil
@@ -54,6 +56,10 @@ func (s *Store) GetPet(ctx context.Context, name string) (Pet, error) {
 
 	var pet Pet
 	if err := s.pets.FindOne(ctx, filter).Decode(&pet); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return Pet{}, NotFoundError{Err: err}
+		}
+
 		return Pet{}, fmt.Errorf("find: %w", err)
 	}
 

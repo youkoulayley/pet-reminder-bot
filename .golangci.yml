@@ -37,13 +37,10 @@ linters-settings:
       - style
       - performance
     disabled-checks:
-      - sloppyReassign
       - rangeValCopy
-      - octalLiteral
-      - paramTypeCombine # already handle by gofumpt.extra-rules
     settings:
       hugeParam:
-        sizeThreshold: 220 # todo must be improved
+        sizeThreshold: 220
 
 linters:
   enable-all: true
@@ -52,32 +49,24 @@ linters:
     - interfacer # deprecated
     - scopelint # deprecated
     - golint # deprecated
-    - sqlclosecheck # not relevant (SQL)
-    - rowserrcheck # not relevant (SQL)
     - cyclop # duplicate of gocyclo
     - lll
-    - dupl
-    - wsl
-    - nlreturn
     - gomnd
     - goerr113
-    - wrapcheck
-    - exhaustive
     - exhaustivestruct
     - testpackage
     - tparallel
     - paralleltest
-    - prealloc
-    - ifshort
-    - forcetypeassert
-    - bodyclose # Too many false positives: https://github.com/timakin/bodyclose/issues/30
     - varnamelen
-    - nilnil
-    - ireturn
-    - contextcheck
     - stylecheck
 
 issues:
   exclude-use-default: false
   max-per-linter: 0
   max-same-issues: 0
+  exclude:
+    - '`Commandes` is a misspelling of `Commands`'
+  exclude-rules:
+    - path: .*_test.go
+      linters:
+        - wrapcheck

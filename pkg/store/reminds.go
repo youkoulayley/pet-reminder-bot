@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -76,8 +77,13 @@ func (s *Store) RemoveRemind(ctx context.Context, id string) error {
 		return fmt.Errorf("object id: %w", err)
 	}
 
-	if _, err = s.reminds.DeleteOne(ctx, bson.D{{Key: "_id", Value: objectID}}); err != nil {
+	res, err := s.reminds.DeleteOne(ctx, bson.D{{Key: "_id", Value: objectID}})
+	if err != nil {
 		return fmt.Errorf("delete remind: %w", err)
+	}
+
+	if res.DeletedCount == 0 {
+		return NotFoundError{Err: errors.New("remind not found")}
 	}
 
 	return nil

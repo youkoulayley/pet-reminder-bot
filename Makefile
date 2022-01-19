@@ -2,7 +2,7 @@
 		build-linux-arm64 build-linux-amd64 multi-arch-image-%  \
 		start-local-db stop-local-db
 
-BIN_NAME := reminderbot
+BIN_NAME := "pet-reminder-bot"
 MAIN_DIRECTORY := ./cmd
 
 TAG_NAME := $(shell git tag -l --contains HEAD)
@@ -19,15 +19,16 @@ default: clean lint test build
 
 start-local-db:
 ifneq ($(LOCAL_DB),mongodb)
-	docker run --restart unless-stopped -d --name mongo \
+	docker start mongo || docker run --restart unless-stopped -d --name mongo \
+		-p 27017:27017 \
         -e MONGO_INITDB_ROOT_USERNAME=mongoadmin \
         -e MONGO_INITDB_ROOT_PASSWORD=secret \
         mongo:4.4
 endif
 
 stop-local-db:
-	docker stop mongodb
-	docker rm mongodb
+	docker stop mongo
+	docker rm mongo
 
 lint:
 	golangci-lint run
@@ -48,3 +49,6 @@ image: export GOOS := linux
 image: export GOARCH := amd64
 image: build
 	docker build -t youkoulayley/$(BIN_NAME):latest .
+
+dockercompose: image
+	docker-compose up -d

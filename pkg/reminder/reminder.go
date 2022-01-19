@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/rs/zerolog/log"
-	"github.com/youkoulayley/reminderbot/pkg/store"
+	"github.com/skwair/harmony"
+	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
+	"go.uber.org/atomic"
 )
 
 // Storer is capable of interacting with the store.
@@ -19,30 +20,28 @@ type Storer interface {
 	UpdateRemind(ctx context.Context, remind store.Remind) error
 }
 
+// Discord is capable of interacting with discord.
+type Discord interface {
+	SendMessage(ctx context.Context, text string) (*harmony.Message, error)
+}
+
 // Reminder represents the reminder.
 type Reminder struct {
 	reminds   []store.Remind
 	remindsMu sync.Mutex
 
-	needUpdate bool
+	needUpdate *atomic.Bool
 
-	discord          *discordgo.Session
-	discordChannelID string
-
-	store Storer
+	store   Storer
+	discord Discord
 }
 
 // New creates a new Reminder.
-func New(s Storer, d *discordgo.Session, discordChannelID string) (*Reminder, error) {
+func New(s Storer, d Discord) (*Reminder, error) {
 	reminder := Reminder{
-		store:            s,
-		discord:          d,
-		discordChannelID: discordChannelID,
-	}
-
-	err := reminder.LoadReminds(context.Background())
-	if err != nil {
-		return nil, err
+		store:      s,
+		discord:    d,
+		needUpdate: atomic.NewBool(true),
 	}
 
 	return &reminder, nil
@@ -50,7 +49,7 @@ func New(s Storer, d *discordgo.Session, discordChannelID string) (*Reminder, er
 
 // SetUpdate notify the reminder to load the new reminds.
 func (r *Reminder) SetUpdate() {
-	r.needUpdate = true
+	r.needUpdate.Store(true)
 }
 
 // LoadReminds loads the reminds stored in the storer and load it to the memory.
@@ -85,27 +84,31 @@ func (r *Reminder) Run(ctx context.Context) {
 
 // Process handles the reminder logic.
 func (r *Reminder) Process(ctx context.Context) {
-	if r.needUpdate {
+	if r.needUpdate.Load() {
 		if err := r.LoadReminds(ctx); err != nil {
-			log.Error().Err(err).Msg("Load reminder")
+			log.Error().Err(err).Msg("Unable to load reminder")
+
 			return
 		}
 
-		r.needUpdate = false
+		r.needUpdate.Store(false)
 	}
 
 	var needUpdate bool
 
 	for _, remind := range r.reminds {
 		if remind.NextRemind.Before(time.Now()) && !remind.ReminderSent {
-			if _, err := r.discord.ChannelMessageSend(r.discordChannelID, fmt.Sprintf("<@%s> Il faut nourrir %q sur %s\nID: %s", remind.DiscordUserID, remind.PetName, remind.Character, remind.ID.Hex())); err != nil {
+			message := fmt.Sprintf("<@%s> Il faut nourrir %q sur %s\nID: %s", remind.DiscordUserID, remind.PetName, remind.Character, remind.ID.Hex())
+			if _, err := r.discord.SendMessage(ctx, message); err != nil {
 				log.Error().Err(err).Msg("Unable to send reminder message")
+
 				continue
 			}
 
 			remind.ReminderSent = true
 			if err := r.store.UpdateRemind(ctx, remind); err != nil {
-				log.Error().Err(err).Msg("Update remind")
+				log.Error().Err(err).Msg("Unable to update remind")
+
 				continue
 			}
 
@@ -116,6 +119,7 @@ func (r *Reminder) Process(ctx context.Context) {
 			pet, err := r.store.GetPet(ctx, remind.PetName)
 			if err != nil {
 				log.Error().Err(err).Msg("Unable to get pet")
+
 				continue
 			}
 
@@ -125,16 +129,19 @@ func (r *Reminder) Process(ctx context.Context) {
 			remind.TimeoutRemind = time.Now().Add(pet.FoodMaxDuration)
 
 			if err = r.store.UpdateRemind(ctx, remind); err != nil {
-				log.Error().Err(err).Msg("Update remind")
-				continue
-			}
+				log.Error().Err(err).Msg("Unable to update remind")
 
-			if _, err = r.discord.ChannelMessageSend(r.discordChannelID, fmt.Sprintf("<@%s> %q sur %s a râté %d repas.\nProchain rappel: %s\nID: %s", remind.DiscordUserID, remind.PetName, remind.Character, remind.MissedReminder, remind.NextRemind.Format(time.RFC1123), remind.ID.Hex())); err != nil {
-				log.Error().Err(err).Msg("Unable to send reminder message")
 				continue
 			}
 
 			needUpdate = true
+
+			message := fmt.Sprintf("<@%s> %q sur %s a râté %d repas.\nProchain rappel: %s\nID: %s", remind.DiscordUserID, remind.PetName, remind.Character, remind.MissedReminder, remind.NextRemind.Format(time.RFC1123), remind.ID.Hex())
+			if _, err = r.discord.SendMessage(ctx, message); err != nil {
+				log.Error().Err(err).Msg("Unable to send reminder message")
+
+				continue
+			}
 		}
 	}
 
