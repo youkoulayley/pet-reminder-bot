@@ -1,9 +1,9 @@
-package handlers
+package bot
 
 import (
 	"context"
 
-	"github.com/skwair/harmony"
+	"github.com/skwair/harmony/discord"
 	"github.com/stretchr/testify/mock"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 )
@@ -12,16 +12,16 @@ type discordMock struct {
 	mock.Mock
 }
 
-func (d *discordMock) Message(_ context.Context, id string) (*harmony.Message, error) {
+func (d *discordMock) Message(_ context.Context, id string) (*discord.Message, error) {
 	ret := d.Called(id)
 
-	return ret.Get(0).(*harmony.Message), ret.Error(1)
+	return ret.Get(0).(*discord.Message), ret.Error(1)
 }
 
-func (d *discordMock) SendMessage(_ context.Context, text string) (*harmony.Message, error) {
+func (d *discordMock) SendMessage(_ context.Context, text string) (*discord.Message, error) {
 	ret := d.Called(text)
 
-	return ret.Get(0).(*harmony.Message), ret.Error(1)
+	return ret.Get(0).(*discord.Message), ret.Error(1)
 }
 
 type storeMock struct {

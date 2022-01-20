@@ -2,51 +2,30 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"github.com/skwair/harmony"
-	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
+	"github.com/skwair/harmony/discord"
 )
 
 // Handler represents a Discord Handler.
 type Handler struct {
-	bot      *harmony.User
-	discord  Discord
-	store    Storer
-	reminder Reminder
-
-	timezone *time.Location
+	bot     Bot
+	botUser discord.User
 }
 
-// NewHandler creates a new Handler.
-func NewHandler(b *harmony.User, d Discord, s Storer, r Reminder, tz *time.Location) Handler {
+// New creates a new Handler.
+func New(b Bot, bu discord.User) Handler {
 	return Handler{
-		bot:      b,
-		discord:  d,
-		store:    s,
-		reminder: r,
-		timezone: tz,
+		bot:     b,
+		botUser: bu,
 	}
 }
 
-// Storer is capable of interacting with the store.
-type Storer interface {
-	ListPets(ctx context.Context) (store.Pets, error)
-	GetPet(ctx context.Context, name string) (store.Pet, error)
-
-	CreateRemind(ctx context.Context, remind store.Remind) error
-	UpdateRemind(ctx context.Context, remind store.Remind) error
-	GetRemind(ctx context.Context, id string) (store.Remind, error)
-	RemoveRemind(ctx context.Context, id string) error
-}
-
-// Reminder is capable of interacting with the reminder.
-type Reminder interface {
-	SetUpdate()
-}
-
-// Discord is capable of interacting with Discord.
-type Discord interface {
-	Message(ctx context.Context, id string) (*harmony.Message, error)
-	SendMessage(ctx context.Context, text string) (*harmony.Message, error)
+// Bot is capable of interacting with the bot.
+type Bot interface {
+	ListPets(ctx context.Context)
+	Remind(ctx context.Context, m *discord.Message)
+	RemoveRemind(ctx context.Context, m *discord.Message)
+	Help(ctx context.Context)
+	NewCycle(ctx context.Context, m *harmony.MessageReaction)
 }

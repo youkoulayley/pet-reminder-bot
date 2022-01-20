@@ -5,10 +5,11 @@ go 1.17
 require (
 	github.com/ettle/strcase v0.1.1
 	github.com/rs/zerolog v1.26.1
-	github.com/skwair/harmony v0.18.0
+	github.com/skwair/harmony v0.18.1-0.20210408101644-63b40974201c
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.mongodb.org/mongo-driver v1.8.2
+	go.uber.org/atomic v1.5.0
 )
 
 require (
@@ -27,7 +28,6 @@ require (
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.uber.org/atomic v1.5.0 // indirect
 	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

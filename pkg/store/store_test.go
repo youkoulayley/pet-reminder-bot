@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func createStore(t *testing.T, reminds []Remind) Store {
+func createStore(t *testing.T, reminds []Remind) *Store {
 	t.Helper()
 
 	ctx := context.Background()
@@ -26,8 +26,7 @@ func createStore(t *testing.T, reminds []Remind) Store {
 	err = client.Connect(ctx)
 	require.NoError(t, err)
 
-	store, err := New(client, database)
-	require.NoError(t, err)
+	store := New(client, database)
 
 	err = store.Bootstrap(ctx)
 	require.NoError(t, err)
