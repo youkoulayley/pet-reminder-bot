@@ -1,4 +1,4 @@
-package handlers
+package bot
 
 import (
 	"testing"
@@ -9,13 +9,13 @@ import (
 
 const testLocation = "Europe/Paris"
 
-func setupHandler(t *testing.T, h Handler) Handler {
+func setupBot(t *testing.T, b Bot) Bot {
 	t.Helper()
 
 	tz, err := time.LoadLocation(testLocation)
 	require.NoError(t, err)
 
-	h.timezone = tz
+	b.timezone = tz
 
-	return h
+	return b
 }

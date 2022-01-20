@@ -7,9 +7,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/skwair/harmony"
 	"github.com/urfave/cli/v2"
+	"github.com/youkoulayley/pet-reminder-bot/pkg/bot"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/handlers"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/reminder"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
@@ -20,20 +22,22 @@ import (
 const databaseName = "pet-reminder-bot"
 
 func run(ctx *cli.Context) error {
-	discordClient, err := harmony.NewClient(ctx.String("bot-token"))
+	level, err := zerolog.ParseLevel(ctx.String(flagLogLevel))
+	if err != nil {
+		return fmt.Errorf("parse log level: %w", err)
+	}
+
+	zerolog.SetGlobalLevel(level)
+
+	discordClient, err := harmony.NewClient(ctx.String(flagBotToken))
 	if err != nil {
 		return fmt.Errorf("create discord client: %w", err)
 	}
 
-	bot, err := discordClient.User(ctx.Context, "@me")
-	if err != nil {
-		return fmt.Errorf("get bot user: %w", err)
-	}
-
-	channel := discordClient.Channel(ctx.String("channel-id"))
+	channel := discordClient.Channel(ctx.String(flagBotChannelID))
 
 	opts := options.Client().
-		ApplyURI(ctx.String("mongo-uri")).
+		ApplyURI(ctx.String(flagMongoURI)).
 		SetSocketTimeout(2 * time.Second).
 		SetConnectTimeout(10 * time.Second).
 		SetServerSelectionTimeout(10 * time.Second)
@@ -49,12 +53,9 @@ func run(ctx *cli.Context) error {
 
 	defer func() { _ = client.Disconnect(ctx.Context) }()
 
-	s, err := store.New(client, databaseName)
-	if err != nil {
-		return fmt.Errorf("new store: %w", err)
-	}
+	s := store.New(client, databaseName)
 
-	r, err := reminder.New(&s, channel)
+	r, err := reminder.New(s, channel)
 	if err != nil {
 		return fmt.Errorf("new reminder: %w", err)
 	}
@@ -70,7 +71,13 @@ func run(ctx *cli.Context) error {
 		return fmt.Errorf("load location %q: %w", flagBotTimezone, err)
 	}
 
-	h := handlers.NewHandler(bot, channel, &s, r, tz)
+	botUser, err := discordClient.User("@me").Get(ctx.Context)
+	if err != nil {
+		return fmt.Errorf("get bot user: %w", err)
+	}
+
+	b := bot.New(channel, s, r, tz)
+	h := handlers.New(b, *botUser)
 
 	discordClient.OnMessageCreate(h.MessageCreate)
 	discordClient.OnMessageReactionAdd(h.ReactionAdd)
