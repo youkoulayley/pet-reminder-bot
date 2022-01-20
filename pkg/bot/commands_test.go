@@ -1,14 +1,16 @@
-package handlers
+package bot
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/skwair/harmony"
+	"github.com/skwair/harmony/discord"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
@@ -52,12 +54,12 @@ func TestHandler_ListPets(t *testing.T) {
 			d := &discordMock{}
 			if test.storeError == nil {
 				d.On("SendMessage", "Chacha\n").
-					Return(&harmony.Message{}, test.discordError).
+					Return(&discord.Message{}, test.discordError).
 					Once()
 			}
 
-			h := Handler{discord: d, store: s}
-			h.ListPets(context.Background())
+			b := Bot{discord: d, store: s}
+			b.ListPets(context.Background())
 
 			s.AssertExpectations(t)
 			d.AssertExpectations(t)
@@ -138,11 +140,11 @@ func TestHandler_Remind(t *testing.T) {
 				id := strings.SplitN(idPart, ": ", 2)[1]
 
 				return id != ""
-			})).Return(&harmony.Message{}, nil).Once()
+			})).Return(&discord.Message{}, nil).Once()
 
-			h := Handler{store: s, discord: d, reminder: r}
-			h = setupHandler(t, h)
-			h.Remind(context.Background(), &harmony.Message{Content: fmt.Sprintf("!remind %s %s", test.pet.Name, test.character), Author: &harmony.User{ID: testDiscordUserID}})
+			b := Bot{store: s, discord: d, reminder: r}
+			b = setupBot(t, b)
+			b.Remind(context.Background(), &discord.Message{Content: fmt.Sprintf("!remind %s %s", test.pet.Name, test.character), Author: discord.User{ID: testDiscordUserID}})
 		})
 	}
 }
@@ -183,13 +185,13 @@ func TestHandler_Remind_validation(t *testing.T) {
 			d.On(
 				"SendMessage",
 				"Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ").
-				Return(&harmony.Message{}, nil).
+				Return(&discord.Message{}, nil).
 				Once()
 
-			h := Handler{discord: d}
+			b := Bot{discord: d}
 
-			message := &harmony.Message{Content: test.command}
-			h.Remind(context.Background(), message)
+			message := &discord.Message{Content: test.command}
+			b.Remind(context.Background(), message)
 
 			d.AssertExpectations(t)
 		})
@@ -230,13 +232,13 @@ func TestHandler_Remind_getPetError(t *testing.T) {
 			d := &discordMock{}
 			if errors.As(test.getPetError, &store.NotFoundError{}) {
 				d.On("SendMessage", "\"Chacha\" n'existe pas. `!familiers` pour connaître la liste des familiers gérés.").
-					Return(&harmony.Message{}, test.sendMessageError).
+					Return(&discord.Message{}, test.sendMessageError).
 					Once()
 			}
 
-			h := Handler{store: s, discord: d}
-			h = setupHandler(t, h)
-			h.Remind(context.Background(), &harmony.Message{Content: "!remind Chacha Test", Author: &harmony.User{ID: testDiscordUserID}})
+			b := Bot{store: s, discord: d}
+			b = setupBot(t, b)
+			b.Remind(context.Background(), &discord.Message{Content: "!remind Chacha Test", Author: discord.User{ID: testDiscordUserID}})
 		})
 	}
 }
@@ -263,9 +265,9 @@ func TestHandler_Remind_createRemindError(t *testing.T) {
 	})).Return(errors.New("boom")).
 		Once()
 
-	h := Handler{store: s}
-	h = setupHandler(t, h)
-	h.Remind(context.Background(), &harmony.Message{Content: "!remind Chacha Test", Author: &harmony.User{ID: testDiscordUserID}})
+	b := Bot{store: s}
+	b = setupBot(t, b)
+	b.Remind(context.Background(), &discord.Message{Content: "!remind Chacha Test", Author: discord.User{ID: testDiscordUserID}})
 }
 
 func TestHandler_Remind_sendMessageError(t *testing.T) {
@@ -317,11 +319,11 @@ func TestHandler_Remind_sendMessageError(t *testing.T) {
 		id := strings.SplitN(idPart, ": ", 2)[1]
 
 		return id != ""
-	})).Return(&harmony.Message{}, errors.New("boom")).Once()
+	})).Return(&discord.Message{}, errors.New("boom")).Once()
 
-	h := Handler{store: s, reminder: r, discord: d}
-	h = setupHandler(t, h)
-	h.Remind(context.Background(), &harmony.Message{Content: "!remind Chacha Test", Author: &harmony.User{ID: testDiscordUserID}})
+	b := Bot{store: s, reminder: r, discord: d}
+	b = setupBot(t, b)
+	b.Remind(context.Background(), &discord.Message{Content: "!remind Chacha Test", Author: discord.User{ID: testDiscordUserID}})
 }
 
 func TestHandler_RemoveRemind(t *testing.T) {
@@ -346,10 +348,10 @@ func TestHandler_RemoveRemind(t *testing.T) {
 	r.On("SetUpdate").Once()
 
 	d := &discordMock{}
-	d.On("SendMessage", fmt.Sprintf("<@2> Reminder %q supprimé", testRemindID)).Return(&harmony.Message{}, nil).Once()
+	d.On("SendMessage", fmt.Sprintf("<@2> Rappel %q supprimé", testRemindID)).Return(&discord.Message{}, nil).Once()
 
-	h := Handler{store: s, discord: d, reminder: r}
-	h.RemoveRemind(context.Background(), &harmony.Message{Content: "!remove " + testRemindID, Author: &harmony.User{ID: "2"}})
+	b := Bot{store: s, discord: d, reminder: r}
+	b.RemoveRemind(context.Background(), &discord.Message{Content: "!remove " + testRemindID, Author: discord.User{ID: "2"}})
 }
 
 func TestHandler_RemoveRemind_validation(t *testing.T) {
@@ -388,10 +390,10 @@ func TestHandler_RemoveRemind_validation(t *testing.T) {
 			t.Parallel()
 
 			d := &discordMock{}
-			d.On("SendMessage", test.wantMessage).Return(&harmony.Message{}, test.sendMessageError).Once()
+			d.On("SendMessage", test.wantMessage).Return(&discord.Message{}, test.sendMessageError).Once()
 
-			h := Handler{discord: d}
-			h.RemoveRemind(context.Background(), &harmony.Message{Content: test.command, Author: &harmony.User{ID: "2"}})
+			b := Bot{discord: d}
+			b.RemoveRemind(context.Background(), &discord.Message{Content: test.command, Author: discord.User{ID: "2"}})
 		})
 	}
 }
@@ -400,8 +402,8 @@ func TestHandler_RemoveRemind_getRemindError(t *testing.T) {
 	s := &storeMock{}
 	s.On("GetRemind", testRemindID).Return(store.Remind{}, errors.New("boom")).Once()
 
-	h := Handler{store: s}
-	h.RemoveRemind(context.Background(), &harmony.Message{Content: "!remove " + testRemindID, Author: &harmony.User{ID: "2"}})
+	b := Bot{store: s}
+	b.RemoveRemind(context.Background(), &discord.Message{Content: "!remove " + testRemindID, Author: discord.User{ID: "2"}})
 }
 
 func TestHandler_RemoveRemind_badUser(t *testing.T) {
@@ -439,10 +441,10 @@ func TestHandler_RemoveRemind_badUser(t *testing.T) {
 			}, nil).Once()
 
 			d := &discordMock{}
-			d.On("SendMessage", "<@5> Vous ne pouvez pas supprimer un rappel qui ne vous appartient pas.").Return(&harmony.Message{}, test.sendMessageError).Once()
+			d.On("SendMessage", "<@5> Vous ne pouvez pas supprimer un rappel qui ne vous appartient pas.").Return(&discord.Message{}, test.sendMessageError).Once()
 
-			h := Handler{store: s, discord: d}
-			h.RemoveRemind(context.Background(), &harmony.Message{Content: "!remove " + testRemindID, Author: &harmony.User{ID: "5"}})
+			b := Bot{store: s, discord: d}
+			b.RemoveRemind(context.Background(), &discord.Message{Content: "!remove " + testRemindID, Author: discord.User{ID: "5"}})
 		})
 	}
 }
@@ -492,11 +494,11 @@ func TestHandler_RemoveRemind_removeRemindError(t *testing.T) {
 
 			d := &discordMock{}
 			if errors.As(test.removeRemindError, &store.NotFoundError{}) {
-				d.On("SendMessage", fmt.Sprintf("<@2> Pas de rappel avec l'id: %q", testRemindID)).Return(&harmony.Message{}, test.sendMessageError).Once()
+				d.On("SendMessage", fmt.Sprintf("<@2> Pas de rappel avec l'id: %q", testRemindID)).Return(&discord.Message{}, test.sendMessageError).Once()
 			}
 
-			h := Handler{store: s, discord: d}
-			h.RemoveRemind(context.Background(), &harmony.Message{Content: "!remove " + testRemindID, Author: &harmony.User{ID: "2"}})
+			b := Bot{store: s, discord: d}
+			b.RemoveRemind(context.Background(), &discord.Message{Content: "!remove " + testRemindID, Author: discord.User{ID: "2"}})
 		})
 	}
 }
@@ -523,10 +525,10 @@ func TestHandler_RemoveRemind_sendMessageError(t *testing.T) {
 	r.On("SetUpdate").Once()
 
 	d := &discordMock{}
-	d.On("SendMessage", fmt.Sprintf("<@2> Reminder %q supprimé", testRemindID)).Return(&harmony.Message{}, errors.New("boom")).Once()
+	d.On("SendMessage", fmt.Sprintf("<@2> Rappel %q supprimé", testRemindID)).Return(&discord.Message{}, errors.New("boom")).Once()
 
-	h := Handler{store: s, discord: d, reminder: r}
-	h.RemoveRemind(context.Background(), &harmony.Message{Content: "!remove " + testRemindID, Author: &harmony.User{ID: "2"}})
+	b := Bot{store: s, discord: d, reminder: r}
+	b.RemoveRemind(context.Background(), &discord.Message{Content: "!remove " + testRemindID, Author: discord.User{ID: "2"}})
 }
 
 func TestHandler_Help(t *testing.T) {
@@ -550,11 +552,213 @@ func TestHandler_Help(t *testing.T) {
 
 			d := &discordMock{}
 			d.On("SendMessage", "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ").
-				Return(&harmony.Message{}, test.sendMessageError).
+				Return(&discord.Message{}, test.sendMessageError).
 				Once()
 
-			h := Handler{discord: d}
-			h.Help(context.Background())
+			b := Bot{discord: d}
+			b.Help(context.Background())
 		})
 	}
+}
+
+func TestHandler_ReactionAdd(t *testing.T) {
+	objectID, err := primitive.ObjectIDFromHex(testRemindID)
+	require.NoError(t, err)
+
+	pet := store.Pet{
+		Name:            "Chacha",
+		FoodMinDuration: 1 * time.Hour,
+		FoodMaxDuration: 2 * time.Hour,
+	}
+
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{Content: "ID: " + testRemindID}, nil).Once()
+
+	s := &storeMock{}
+	s.On("GetRemind", testRemindID).Return(store.Remind{
+		ID:             objectID,
+		DiscordUserID:  testDiscordUserID,
+		PetName:        "Chacha",
+		Character:      "Test",
+		MissedReminder: 0,
+		NextRemind:     time.Time{},
+		ReminderSent:   false,
+		TimeoutRemind:  time.Time{},
+	}, nil).Once()
+
+	s.On("GetPet", "Chacha").Return(pet, nil).Once()
+
+	s.On("UpdateRemind", mock.MatchedBy(func(remind store.Remind) bool {
+		if time.Now().Add(pet.FoodMinDuration).Sub(remind.NextRemind) > time.Minute {
+			return false
+		}
+
+		if time.Now().Add(pet.FoodMaxDuration).Sub(remind.TimeoutRemind) > time.Minute {
+			return false
+		}
+
+		return reflect.DeepEqual(store.Remind{
+			ID:             objectID,
+			DiscordUserID:  testDiscordUserID,
+			PetName:        "Chacha",
+			Character:      "Test",
+			MissedReminder: 0,
+			NextRemind:     remind.NextRemind,
+			ReminderSent:   false,
+			TimeoutRemind:  remind.TimeoutRemind,
+		}, remind)
+	})).Return(nil).Once()
+
+	r := &reminderMock{}
+	r.On("SetUpdate").Once()
+
+	b := Bot{store: s, reminder: r, discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+}
+
+func TestHandler_ReactionAdd_messageError(t *testing.T) {
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{}, errors.New("boom")).Once()
+
+	b := Bot{discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+}
+
+func TestHandler_ReactionAdd_validation(t *testing.T) {
+	tests := []struct {
+		desc    string
+		message string
+	}{
+		{
+			desc:    "invalid id",
+			message: "ID: 123",
+		},
+		{
+			desc: "invalid id",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			d := &discordMock{}
+			d.On("Message", "123").Return(&discord.Message{Content: test.message}, nil).Once()
+
+			b := Bot{discord: d}
+			b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+		})
+	}
+}
+
+func TestHandler_ReactionAdd_getRemindError(t *testing.T) {
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{Content: "ID: " + testRemindID}, nil).Once()
+
+	s := &storeMock{}
+	s.On("GetRemind", testRemindID).Return(store.Remind{}, errors.New("boom")).Once()
+
+	b := Bot{store: s, discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+}
+
+func TestHandler_ReactionAdd_badUser(t *testing.T) {
+	objectID, err := primitive.ObjectIDFromHex(testRemindID)
+	require.NoError(t, err)
+
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{Content: "ID: " + testRemindID}, nil).Once()
+
+	s := &storeMock{}
+	s.On("GetRemind", testRemindID).Return(store.Remind{
+		ID:             objectID,
+		DiscordUserID:  "5",
+		PetName:        "Chacha",
+		Character:      "Test",
+		MissedReminder: 0,
+		NextRemind:     time.Time{},
+		ReminderSent:   false,
+		TimeoutRemind:  time.Time{},
+	}, nil).Once()
+
+	b := Bot{store: s, discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+}
+
+func TestHandler_ReactionAdd_getPetError(t *testing.T) {
+	objectID, err := primitive.ObjectIDFromHex(testRemindID)
+	require.NoError(t, err)
+
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{Content: "ID: " + testRemindID}, nil).Once()
+
+	s := &storeMock{}
+	s.On("GetRemind", testRemindID).Return(store.Remind{
+		ID:             objectID,
+		DiscordUserID:  testDiscordUserID,
+		PetName:        "Chacha",
+		Character:      "Test",
+		MissedReminder: 0,
+		NextRemind:     time.Time{},
+		ReminderSent:   false,
+		TimeoutRemind:  time.Time{},
+	}, nil).Once()
+
+	s.On("GetPet", "Chacha").Return(store.Pet{}, errors.New("boom")).Once()
+
+	b := Bot{store: s, discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
+}
+
+func TestHandler_ReactionAdd_updateRemindError(t *testing.T) {
+	objectID, err := primitive.ObjectIDFromHex(testRemindID)
+	require.NoError(t, err)
+
+	pet := store.Pet{
+		Name:            "Chacha",
+		FoodMinDuration: 1 * time.Hour,
+		FoodMaxDuration: 2 * time.Hour,
+	}
+
+	d := &discordMock{}
+	d.On("Message", "123").Return(&discord.Message{Content: "ID: " + testRemindID}, nil).Once()
+
+	s := &storeMock{}
+	s.On("GetRemind", testRemindID).Return(store.Remind{
+		ID:             objectID,
+		DiscordUserID:  testDiscordUserID,
+		PetName:        "Chacha",
+		Character:      "Test",
+		MissedReminder: 0,
+		NextRemind:     time.Time{},
+		ReminderSent:   false,
+		TimeoutRemind:  time.Time{},
+	}, nil).Once()
+
+	s.On("GetPet", "Chacha").Return(pet, nil).Once()
+
+	s.On("UpdateRemind", mock.MatchedBy(func(remind store.Remind) bool {
+		if time.Now().Add(pet.FoodMinDuration).Sub(remind.NextRemind) > time.Minute {
+			return false
+		}
+
+		if time.Now().Add(pet.FoodMaxDuration).Sub(remind.TimeoutRemind) > time.Minute {
+			return false
+		}
+
+		return reflect.DeepEqual(store.Remind{
+			ID:             objectID,
+			DiscordUserID:  testDiscordUserID,
+			PetName:        "Chacha",
+			Character:      "Test",
+			MissedReminder: 0,
+			NextRemind:     remind.NextRemind,
+			ReminderSent:   false,
+			TimeoutRemind:  remind.TimeoutRemind,
+		}, remind)
+	})).Return(errors.New("boom")).Once()
+
+	b := Bot{store: s, discord: d}
+	b.NewCycle(context.Background(), &harmony.MessageReaction{MessageID: "123", UserID: testDiscordUserID})
 }

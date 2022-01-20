@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skwair/harmony"
+	"github.com/skwair/harmony/discord"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -59,7 +59,7 @@ func TestReminder_Process_sendRemind(t *testing.T) {
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
-		Return(&harmony.Message{}, nil).
+		Return(&discord.Message{}, nil).
 		Once()
 
 	updatedRemind := remind
@@ -91,7 +91,7 @@ func TestReminder_Process_sendRemind_sendMessageError(t *testing.T) {
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
-		Return(&harmony.Message{}, errors.New("boom")).
+		Return(&discord.Message{}, errors.New("boom")).
 		Once()
 
 	r, err := New(s, d)
@@ -119,7 +119,7 @@ func TestReminder_Process_sendRemind_updateRemindError(t *testing.T) {
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
-		Return(&harmony.Message{}, nil).
+		Return(&discord.Message{}, nil).
 		Once()
 
 	updatedRemind := remind
@@ -197,7 +197,7 @@ func TestReminder_Process_sendTimeoutRemind(t *testing.T) {
 		}
 
 		return idPart == "ID: "+id.Hex()
-	})).Return(&harmony.Message{}, nil).
+	})).Return(&discord.Message{}, nil).
 		Once()
 
 	r, err := New(s, d)
@@ -342,7 +342,7 @@ func TestReminder_Process_sendTimeoutRemind_sendMessageError(t *testing.T) {
 		}
 
 		return idPart == "ID: "+id.Hex()
-	})).Return(&harmony.Message{}, errors.New("boom")).
+	})).Return(&discord.Message{}, errors.New("boom")).
 		Once()
 
 	r, err := New(s, d)

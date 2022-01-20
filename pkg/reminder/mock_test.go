@@ -3,7 +3,7 @@ package reminder
 import (
 	"context"
 
-	"github.com/skwair/harmony"
+	"github.com/skwair/harmony/discord"
 	"github.com/stretchr/testify/mock"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 )
@@ -32,8 +32,8 @@ type discordMock struct {
 	mock.Mock
 }
 
-func (d *discordMock) SendMessage(_ context.Context, text string) (*harmony.Message, error) {
+func (d *discordMock) SendMessage(_ context.Context, text string) (*discord.Message, error) {
 	ret := d.Called(text)
 
-	return ret.Get(0).(*harmony.Message), ret.Error(1)
+	return ret.Get(0).(*discord.Message), ret.Error(1)
 }

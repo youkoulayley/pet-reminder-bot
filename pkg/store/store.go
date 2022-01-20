@@ -24,12 +24,12 @@ type Store struct {
 }
 
 // New creates a new Store.
-func New(client *mongo.Client, databaseName string) (Store, error) {
-	return Store{
+func New(client *mongo.Client, databaseName string) *Store {
+	return &Store{
 		client:  client,
 		pets:    client.Database(databaseName).Collection(petCollection),
 		reminds: client.Database(databaseName).Collection(remindCollection),
-	}, nil
+	}
 }
 
 // Bootstrap boostraps the database.

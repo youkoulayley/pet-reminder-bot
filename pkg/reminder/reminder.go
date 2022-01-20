@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/skwair/harmony"
+	"github.com/skwair/harmony/discord"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 	"go.uber.org/atomic"
 )
@@ -22,7 +22,7 @@ type Storer interface {
 
 // Discord is capable of interacting with discord.
 type Discord interface {
-	SendMessage(ctx context.Context, text string) (*harmony.Message, error)
+	SendMessage(ctx context.Context, text string) (*discord.Message, error)
 }
 
 // Reminder represents the reminder.
