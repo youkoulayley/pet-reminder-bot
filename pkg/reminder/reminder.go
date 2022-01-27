@@ -15,7 +15,6 @@ import (
 // Storer is capable of interacting with the store.
 type Storer interface {
 	GetPet(ctx context.Context, name string) (store.Pet, error)
-
 	ListReminds(ctx context.Context) ([]store.Remind, error)
 	UpdateRemind(ctx context.Context, remind store.Remind) error
 }
