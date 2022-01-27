@@ -31,7 +31,6 @@ func New(d Discord, s Storer, r Reminder, tz *time.Location) *Bot {
 type Storer interface {
 	ListPets(ctx context.Context) (store.Pets, error)
 	GetPet(ctx context.Context, name string) (store.Pet, error)
-
 	CreateRemind(ctx context.Context, remind store.Remind) error
 	UpdateRemind(ctx context.Context, remind store.Remind) error
 	GetRemind(ctx context.Context, id string) (store.Remind, error)

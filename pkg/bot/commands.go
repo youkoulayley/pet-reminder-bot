@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/skwair/harmony"
-	"github.com/skwair/harmony/discord"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -31,30 +29,44 @@ func (b *Bot) ListPets(ctx context.Context) {
 	}
 }
 
+// RemindConfig represents remind command config.
+type RemindConfig struct {
+	AuthorID  string
+	Pet       string
+	Character string
+}
+
+// Validate ensures that all fields are valid.
+func (c RemindConfig) Validate() error {
+	if c.AuthorID == "" {
+		return errors.New("author id cannot be empty")
+	}
+
+	if c.Pet == "" {
+		return errors.New("pet cannot be empty")
+	}
+
+	if c.Character == "" {
+		return errors.New("character cannot be empty")
+	}
+
+	return nil
+}
+
 // Remind handles the remind command for the bot.
 // Call it with `!remind <PetName> <CharacterName>`
 // PetName can be found with the ListPets command.
-func (b *Bot) Remind(ctx context.Context, m *discord.Message) {
-	parts := strings.Split(m.Content, " ")
-	if len(parts) != 3 {
+func (b *Bot) Remind(ctx context.Context, cfg RemindConfig) {
+	if err := cfg.Validate(); err != nil {
 		b.Help(ctx)
 
 		return
 	}
 
-	pet := parts[1]
-	character := parts[2]
-
-	if pet == "" || character == "" {
-		b.Help(ctx)
-
-		return
-	}
-
-	petDuration, err := b.store.GetPet(ctx, pet)
+	petDuration, err := b.store.GetPet(ctx, cfg.Pet)
 	if err != nil {
 		if errors.As(err, &store.NotFoundError{}) {
-			message := fmt.Sprintf("%q n'existe pas. `!familiers` pour connaître la liste des familiers gérés.", pet)
+			message := fmt.Sprintf("%q n'existe pas. `!familiers` pour connaître la liste des familiers gérés.", cfg.Pet)
 			if _, err = b.discord.SendMessage(ctx, message); err != nil {
 				log.Error().Err(err).Msg("Unable to send message")
 
@@ -72,9 +84,9 @@ func (b *Bot) Remind(ctx context.Context, m *discord.Message) {
 	id := primitive.NewObjectID()
 	remind := store.Remind{
 		ID:            id,
-		DiscordUserID: m.Author.ID,
-		PetName:       pet,
-		Character:     character,
+		DiscordUserID: cfg.AuthorID,
+		PetName:       cfg.Pet,
+		Character:     cfg.Character,
 		NextRemind:    time.Now().Add(petDuration.FoodMinDuration),
 		TimeoutRemind: time.Now().Add(petDuration.FoodMaxDuration),
 	}
@@ -89,9 +101,9 @@ func (b *Bot) Remind(ctx context.Context, m *discord.Message) {
 
 	message := fmt.Sprintf(
 		"<@%s> Rappel activé pour familier %q sur %s\nProchain rappel: %s\nID: %s\n",
-		m.Author.ID,
-		pet,
-		character,
+		cfg.AuthorID,
+		cfg.Pet,
+		cfg.Character,
 		remind.NextRemind.In(b.timezone).Format(time.RFC1123),
 		id.Hex(),
 	)
@@ -102,41 +114,45 @@ func (b *Bot) Remind(ctx context.Context, m *discord.Message) {
 	}
 }
 
+// RemoveRemindConfig represents remove remind command config.
+type RemoveRemindConfig struct {
+	AuthorID string
+	ID       string
+}
+
+// Validate ensures that all fields are valid.
+func (c RemoveRemindConfig) Validate() error {
+	if c.AuthorID == "" {
+		return errors.New("author id cannot be empty")
+	}
+
+	if _, err := primitive.ObjectIDFromHex(c.ID); err != nil {
+		return fmt.Errorf("object id from hex: %w", err)
+	}
+
+	return nil
+}
+
 // RemoveRemind handles the remove command for the bot.
 // Call it with `!remove <RemindID>`.
-func (b *Bot) RemoveRemind(ctx context.Context, m *discord.Message) {
-	parts := strings.Split(m.Content, " ")
-	if len(parts) != 2 {
+func (b *Bot) RemoveRemind(ctx context.Context, cfg RemoveRemindConfig) {
+	if err := cfg.Validate(); err != nil {
 		b.Help(ctx)
 
 		return
 	}
 
-	id := parts[1]
-	if _, err := primitive.ObjectIDFromHex(id); err != nil {
-		log.Debug().Msg("ID invalid")
+	logger := log.With().Str("id", cfg.ID).Logger()
 
-		message := fmt.Sprintf("<@%s> ID invalide.", m.Author.ID)
-		if _, err := b.discord.SendMessage(ctx, message); err != nil {
-			log.Error().Err(err).Msg("Unable to send message")
-
-			return
-		}
-
-		return
-	}
-
-	logger := log.With().Str("id", id).Logger()
-
-	remind, err := b.store.GetRemind(ctx, id)
+	remind, err := b.store.GetRemind(ctx, cfg.ID)
 	if err != nil {
 		logger.Error().Err(err).Msg("Unable to find remind")
 
 		return
 	}
 
-	if remind.DiscordUserID != m.Author.ID {
-		message := fmt.Sprintf("<@%s> Vous ne pouvez pas supprimer un rappel qui ne vous appartient pas.", m.Author.ID)
+	if remind.DiscordUserID != cfg.AuthorID {
+		message := fmt.Sprintf("<@%s> Vous ne pouvez pas supprimer un rappel qui ne vous appartient pas.", cfg.AuthorID)
 		if _, err = b.discord.SendMessage(ctx, message); err != nil {
 			logger.Error().Err(err).Msg("Unable to send message")
 
@@ -148,11 +164,11 @@ func (b *Bot) RemoveRemind(ctx context.Context, m *discord.Message) {
 		return
 	}
 
-	if err = b.store.RemoveRemind(ctx, id); err != nil {
+	if err = b.store.RemoveRemind(ctx, cfg.ID); err != nil {
 		if errors.As(err, &store.NotFoundError{}) {
 			logger.Debug().Err(err).Msg("Unable to find reminder")
 
-			message := fmt.Sprintf("<@%s> Pas de rappel avec l'id: %q", m.Author.ID, id)
+			message := fmt.Sprintf("<@%s> Pas de rappel avec l'id: %q", cfg.AuthorID, cfg.ID)
 			if _, err = b.discord.SendMessage(ctx, message); err != nil {
 				logger.Error().Err(err).Msg("Unable to send message")
 
@@ -169,7 +185,7 @@ func (b *Bot) RemoveRemind(ctx context.Context, m *discord.Message) {
 
 	b.reminder.SetUpdate()
 
-	message := fmt.Sprintf("<@%s> Rappel %q supprimé", m.Author.ID, id)
+	message := fmt.Sprintf("<@%s> Rappel %q supprimé", cfg.AuthorID, cfg.ID)
 	if _, err = b.discord.SendMessage(ctx, message); err != nil {
 		logger.Error().Err(err).Msg("Unable to send message")
 
@@ -187,9 +203,34 @@ func (b *Bot) Help(ctx context.Context) {
 	}
 }
 
+// NewCycleConfig represents new cycle config.
+type NewCycleConfig struct {
+	AuthorID  string
+	MessageID string
+}
+
+// Validate ensures that all fields are valid.
+func (c *NewCycleConfig) Validate() error {
+	if c.AuthorID == "" {
+		return errors.New("author id cannot be empty")
+	}
+
+	if c.MessageID == "" {
+		return errors.New("message id cannot be empty")
+	}
+
+	return nil
+}
+
 // NewCycle starts a new cycle when the user add a reaction to a message.
-func (b *Bot) NewCycle(ctx context.Context, m *harmony.MessageReaction) {
-	message, err := b.discord.Message(ctx, m.MessageID)
+func (b *Bot) NewCycle(ctx context.Context, cfg NewCycleConfig) {
+	if err := cfg.Validate(); err != nil {
+		b.Help(ctx)
+
+		return
+	}
+
+	message, err := b.discord.Message(ctx, cfg.MessageID)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to find message")
 
@@ -217,7 +258,7 @@ func (b *Bot) NewCycle(ctx context.Context, m *harmony.MessageReaction) {
 		return
 	}
 
-	if remind.DiscordUserID != m.UserID {
+	if remind.DiscordUserID != cfg.AuthorID {
 		log.Error().Msg("Invalid user")
 
 		return

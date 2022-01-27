@@ -23,7 +23,7 @@ global_job_config:
       - export "SEMAPHORE_GIT_DIR=${GOPATH}/src/github.com/youkoulayley/${SEMAPHORE_PROJECT_NAME}"
       - export "PATH=${GOPATH}/bin:${PATH}"
       - mkdir -vp "${SEMAPHORE_GIT_DIR}" "${GOPATH}/bin"
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v1.43.0
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v1.44.0
       - checkout
       - cache restore "mod-${SEMAPHORE_PROJECT_NAME}-${SEMAPHORE_GIT_BRANCH}-$(checksum go.mod),mod-${SEMAPHORE_PROJECT_NAME}-$(checksum go.mod),mod-${SEMAPHORE_PROJECT_NAME}"
       - make start-local-db
