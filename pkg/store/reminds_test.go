@@ -116,7 +116,7 @@ func TestStore_UpdateRemind(t *testing.T) {
 	assert.Equal(t, update, got)
 }
 
-func TestStore_ListReminds(t *testing.T) {
+func TestStore_ListAllReminds(t *testing.T) {
 	ctx := context.Background()
 
 	reminds := []Remind{
@@ -143,10 +143,43 @@ func TestStore_ListReminds(t *testing.T) {
 	}
 	s := createStore(t, reminds)
 
-	got, err := s.ListReminds(ctx)
+	got, err := s.ListAllReminds(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, reminds, got)
+}
+
+func TestStore_ListRemindsByID(t *testing.T) {
+	ctx := context.Background()
+
+	reminds := []Remind{
+		{
+			ID:             primitive.NewObjectID(),
+			DiscordUserID:  "discordUser",
+			PetName:        "pet",
+			Character:      "character",
+			MissedReminder: 0,
+			NextRemind:     time.Time{},
+			ReminderSent:   false,
+			TimeoutRemind:  time.Time{},
+		},
+		{
+			ID:             primitive.NewObjectID(),
+			DiscordUserID:  "discordUser2",
+			PetName:        "pet2",
+			Character:      "character2",
+			MissedReminder: 0,
+			NextRemind:     time.Time{},
+			ReminderSent:   false,
+			TimeoutRemind:  time.Time{},
+		},
+	}
+	s := createStore(t, reminds)
+
+	got, err := s.ListRemindsByID(ctx, "discordUser")
+	require.NoError(t, err)
+
+	assert.Equal(t, []Remind{reminds[0]}, got)
 }
 
 func TestStore_RemoveRemind(t *testing.T) {

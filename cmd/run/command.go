@@ -7,6 +7,7 @@ import (
 
 const (
 	flagLogLevel     = "log-level"
+	flagLogFormat    = "log-format"
 	flagBotToken     = "bot-token"
 	flagBotChannelID = "bot-channel-id"
 	flagBotTimezone  = "bot-timezone"
@@ -24,6 +25,12 @@ func Command() *cli.Command {
 				Usage:   "Log level",
 				EnvVars: []string{strcase.ToSNAKE(flagLogLevel)},
 				Value:   "debug",
+			},
+			&cli.StringFlag{
+				Name:    flagLogFormat,
+				Usage:   "Log format",
+				EnvVars: []string{strcase.ToSNAKE(flagLogFormat)},
+				Value:   "console",
 			},
 			&cli.StringFlag{
 				Name:     flagBotToken,

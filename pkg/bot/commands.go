@@ -12,6 +12,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const helpMessage = `Commandes disponible:
+  - ` + "`!familiers`" + `
+  - ` + "`!list`" + `
+  - ` + "`!remind <Familier> <Personnage>`" + `
+  - ` + "`!remove <ID>` "
+
 // ListPets handles the familiers command for the bot.
 // Call it with `!familiers`.
 func (b *Bot) ListPets(ctx context.Context) {
@@ -195,8 +201,7 @@ func (b *Bot) RemoveRemind(ctx context.Context, cfg RemoveRemindConfig) {
 
 // Help handles all other commands.
 func (b *Bot) Help(ctx context.Context) {
-	message := "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` "
-	if _, err := b.discord.SendMessage(ctx, message); err != nil {
+	if _, err := b.discord.SendMessage(ctx, helpMessage); err != nil {
 		log.Error().Err(err).Msg("Unable to send message")
 
 		return
@@ -283,4 +288,39 @@ func (b *Bot) NewCycle(ctx context.Context, cfg NewCycleConfig) {
 	}
 
 	b.reminder.SetUpdate()
+}
+
+// ListReminds lists all reminds set for the user identified by the given id.
+func (b *Bot) ListReminds(ctx context.Context, id string) {
+	logger := log.With().Str("id", id).Logger()
+
+	reminds, err := b.store.ListRemindsByID(ctx, id)
+	if err != nil {
+		logger.Error().Err(err).Msg("Unable to list reminds")
+
+		return
+	}
+
+	if len(reminds) == 0 {
+		if _, err = b.discord.SendMessage(ctx, fmt.Sprintf("<@%s> Aucun rappel disponible", id)); err != nil {
+			logger.Error().Err(err).Msg("Unable to send message")
+
+			return
+		}
+
+		return
+	}
+
+	message := []string{fmt.Sprintf("<@%s> Liste de vos rappels:", id)}
+
+	for _, remind := range reminds {
+		r := fmt.Sprintf("  - %s - %s sur %s - Prochain rappel: %s", remind.ID.Hex(), remind.PetName, remind.Character, remind.NextRemind.In(b.timezone).Format(time.RFC1123))
+		message = append(message, r)
+	}
+
+	if _, err = b.discord.SendMessage(ctx, strings.Join(message, "\n")); err != nil {
+		logger.Error().Err(err).Msg("Unable to send message")
+
+		return
+	}
 }

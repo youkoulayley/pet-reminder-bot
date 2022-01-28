@@ -11,6 +11,10 @@ type botMock struct {
 	mock.Mock
 }
 
+func (b *botMock) ListReminds(_ context.Context, id string) {
+	b.Called(id)
+}
+
 func (b *botMock) ListPets(_ context.Context) {
 	b.Called()
 }

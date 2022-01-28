@@ -2,8 +2,10 @@
 
 This is a bot created for `Dofus Retro`, to remind me to feed my pets.
 
-Available commands:
+Available commands: 
+  - `!help`: print help.
   - `!familiers`: list all pets available.
+  - `!list`: list reminders for the current user.
   - `!remind <PET_NAME> <CHARACTER_NAME>`: set a reminder for a pet on a specific character.
   - `!remove <ID>`: remove a reminder by its ID.
 
@@ -50,5 +52,4 @@ You just have to change :
   - The `BOT_TIMEZONE`: timezone for discord messages.
 
 ## Ideas
-- Sent reminder by MP
-- List reminders for a discord User
+- Send reminder by MP
