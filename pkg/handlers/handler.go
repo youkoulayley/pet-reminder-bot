@@ -24,6 +24,7 @@ func New(b Bot, bu discord.User) Handler {
 // Bot is capable of interacting with the bot.
 type Bot interface {
 	ListPets(ctx context.Context)
+	ListReminds(ctx context.Context, id string)
 	Remind(ctx context.Context, cfg bot.RemindConfig)
 	RemoveRemind(ctx context.Context, cfg bot.RemoveRemindConfig)
 	Help(ctx context.Context)

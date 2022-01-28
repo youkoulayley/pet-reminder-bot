@@ -15,7 +15,7 @@ import (
 // Storer is capable of interacting with the store.
 type Storer interface {
 	GetPet(ctx context.Context, name string) (store.Pet, error)
-	ListReminds(ctx context.Context) ([]store.Remind, error)
+	ListAllReminds(ctx context.Context) ([]store.Remind, error)
 	UpdateRemind(ctx context.Context, remind store.Remind) error
 }
 
@@ -53,7 +53,7 @@ func (r *Reminder) SetUpdate() {
 
 // LoadReminds loads the reminds stored in the storer and load it to the memory.
 func (r *Reminder) LoadReminds(ctx context.Context) error {
-	reminds, err := r.store.ListReminds(ctx)
+	reminds, err := r.store.ListAllReminds(ctx)
 	if err != nil {
 		return fmt.Errorf("list reminds: %w", err)
 	}

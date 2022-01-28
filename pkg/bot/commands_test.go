@@ -152,6 +152,10 @@ func TestHandler_Remind(t *testing.T) {
 			b := Bot{store: s, discord: d, reminder: r}
 			b = setupBot(t, b)
 			b.Remind(context.Background(), test.config)
+
+			s.AssertExpectations(t)
+			r.AssertExpectations(t)
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -194,9 +198,7 @@ func TestHandler_Remind_validation(t *testing.T) {
 			t.Parallel()
 
 			d := &discordMock{}
-			d.On(
-				"SendMessage",
-				"Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ").
+			d.On("SendMessage", helpMessage).
 				Return(&discord.Message{}, nil).
 				Once()
 
@@ -256,6 +258,9 @@ func TestHandler_Remind_getPetError(t *testing.T) {
 				Character: "Test",
 			}
 			b.Remind(context.Background(), cfg)
+
+			s.AssertExpectations(t)
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -291,6 +296,8 @@ func TestHandler_Remind_createRemindError(t *testing.T) {
 		Character: "Test",
 	}
 	b.Remind(context.Background(), cfg)
+
+	s.AssertExpectations(t)
 }
 
 func TestHandler_Remind_sendMessageError(t *testing.T) {
@@ -353,6 +360,10 @@ func TestHandler_Remind_sendMessageError(t *testing.T) {
 		Character: "Test",
 	}
 	b.Remind(context.Background(), cfg)
+
+	s.AssertExpectations(t)
+	r.AssertExpectations(t)
+	d.AssertExpectations(t)
 }
 
 func TestHandler_RemoveRemind(t *testing.T) {
@@ -384,26 +395,27 @@ func TestHandler_RemoveRemind(t *testing.T) {
 		AuthorID: testDiscordUserID,
 		ID:       testRemindID,
 	})
+
+	s.AssertExpectations(t)
+	r.AssertExpectations(t)
+	d.AssertExpectations(t)
 }
 
 func TestHandler_RemoveRemind_validation(t *testing.T) {
 	tests := []struct {
 		desc             string
 		config           RemoveRemindConfig
-		wantMessage      string
 		sendMessageError error
 	}{
 		{
-			desc:        "bad usage",
-			config:      RemoveRemindConfig{},
-			wantMessage: "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ",
+			desc:   "bad usage",
+			config: RemoveRemindConfig{},
 		},
 		{
 			desc: "emty author id",
 			config: RemoveRemindConfig{
 				ID: testRemindID,
 			},
-			wantMessage: "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ",
 		},
 		{
 			desc: "invalid id",
@@ -411,7 +423,6 @@ func TestHandler_RemoveRemind_validation(t *testing.T) {
 				AuthorID: testDiscordUserID,
 				ID:       "12",
 			},
-			wantMessage: "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ",
 		},
 		{
 			desc: "send message blew up",
@@ -419,7 +430,6 @@ func TestHandler_RemoveRemind_validation(t *testing.T) {
 				AuthorID: testDiscordUserID,
 				ID:       "12",
 			},
-			wantMessage:      "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ",
 			sendMessageError: errors.New("boom"),
 		},
 	}
@@ -430,10 +440,12 @@ func TestHandler_RemoveRemind_validation(t *testing.T) {
 			t.Parallel()
 
 			d := &discordMock{}
-			d.On("SendMessage", test.wantMessage).Return(&discord.Message{}, test.sendMessageError).Once()
+			d.On("SendMessage", helpMessage).Return(&discord.Message{}, test.sendMessageError).Once()
 
 			b := Bot{discord: d}
 			b.RemoveRemind(context.Background(), test.config)
+
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -448,6 +460,8 @@ func TestHandler_RemoveRemind_getRemindError(t *testing.T) {
 		ID:       testRemindID,
 	}
 	b.RemoveRemind(context.Background(), cfg)
+
+	s.AssertExpectations(t)
 }
 
 func TestHandler_RemoveRemind_badUser(t *testing.T) {
@@ -494,6 +508,9 @@ func TestHandler_RemoveRemind_badUser(t *testing.T) {
 				ID:       testRemindID,
 			}
 			b.RemoveRemind(context.Background(), cfg)
+
+			s.AssertExpectations(t)
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -553,6 +570,9 @@ func TestHandler_RemoveRemind_removeRemindError(t *testing.T) {
 				ID:       testRemindID,
 			}
 			b.RemoveRemind(context.Background(), cfg)
+
+			s.AssertExpectations(t)
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -588,6 +608,10 @@ func TestHandler_RemoveRemind_sendMessageError(t *testing.T) {
 		ID:       testRemindID,
 	}
 	b.RemoveRemind(context.Background(), cfg)
+
+	s.AssertExpectations(t)
+	r.AssertExpectations(t)
+	d.AssertExpectations(t)
 }
 
 func TestHandler_Help(t *testing.T) {
@@ -610,12 +634,14 @@ func TestHandler_Help(t *testing.T) {
 			t.Parallel()
 
 			d := &discordMock{}
-			d.On("SendMessage", "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ").
+			d.On("SendMessage", helpMessage).
 				Return(&discord.Message{}, test.sendMessageError).
 				Once()
 
 			b := Bot{discord: d}
 			b.Help(context.Background())
+
+			d.AssertExpectations(t)
 		})
 	}
 }
@@ -678,6 +704,10 @@ func TestHandler_NewCycle(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
+	s.AssertExpectations(t)
+	r.AssertExpectations(t)
 }
 
 func TestHandler_NewCycle_messageError(t *testing.T) {
@@ -691,6 +721,8 @@ func TestHandler_NewCycle_messageError(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
 }
 
 func TestHandler_NewCycle_validation(t *testing.T) {
@@ -714,7 +746,7 @@ func TestHandler_NewCycle_validation(t *testing.T) {
 			t.Parallel()
 
 			d := &discordMock{}
-			d.On("SendMessage", "Commandes disponible:\n  - `!familiers`\n  - `!remind <Familier> <Personnage>`\n  - `!remove <ID>` ").
+			d.On("SendMessage", helpMessage).
 				Return(&discord.Message{}, nil).
 				Once()
 
@@ -775,6 +807,9 @@ func TestHandler_NewCycle_getRemindError(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
+	s.AssertExpectations(t)
 }
 
 func TestHandler_NewCycle_badUser(t *testing.T) {
@@ -803,6 +838,9 @@ func TestHandler_NewCycle_badUser(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
+	s.AssertExpectations(t)
 }
 
 func TestHandler_NewCycle_getPetError(t *testing.T) {
@@ -833,6 +871,9 @@ func TestHandler_NewCycle_getPetError(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
+	s.AssertExpectations(t)
 }
 
 func TestHandler_NewCycle_updateRemindError(t *testing.T) {
@@ -890,4 +931,112 @@ func TestHandler_NewCycle_updateRemindError(t *testing.T) {
 		MessageID: "123",
 	}
 	b.NewCycle(context.Background(), cfg)
+
+	d.AssertExpectations(t)
+	s.AssertExpectations(t)
+}
+
+func TestHandler_ListReminds(t *testing.T) {
+	ctx := context.Background()
+
+	s := &storeMock{}
+	s.On("ListRemindsByID", "3").
+		Return([]store.Remind{
+			{PetName: "Chacha", Character: "Test", NextRemind: time.Time{}},
+			{PetName: "Nomoon", Character: "Test2", NextRemind: time.Time{}.Add(time.Hour)},
+		}, nil).
+		Once()
+
+	d := &discordMock{}
+	wantMessage := `<@3> Liste de vos rappels:
+  - 000000000000000000000000 - Chacha sur Test - Prochain rappel: Mon, 01 Jan 0001 00:09:21 LMT
+  - 000000000000000000000000 - Nomoon sur Test2 - Prochain rappel: Mon, 01 Jan 0001 01:09:21 LMT`
+	d.On("SendMessage", wantMessage).Return(&discord.Message{}, nil).Once()
+
+	b := Bot{discord: d, store: s}
+	b = setupBot(t, b)
+	b.ListReminds(ctx, "3")
+
+	s.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestHandler_ListReminds_noRemind(t *testing.T) {
+	ctx := context.Background()
+
+	s := &storeMock{}
+	s.On("ListRemindsByID", "3").
+		Return([]store.Remind{}, nil).
+		Once()
+
+	d := &discordMock{}
+	wantMessage := "<@3> Aucun rappel disponible"
+	d.On("SendMessage", wantMessage).Return(&discord.Message{}, nil).Once()
+
+	b := Bot{discord: d, store: s}
+	b = setupBot(t, b)
+	b.ListReminds(ctx, "3")
+
+	s.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestHandler_ListReminds_noRemind_sendMessageError(t *testing.T) {
+	ctx := context.Background()
+
+	s := &storeMock{}
+	s.On("ListRemindsByID", "3").
+		Return([]store.Remind{}, nil).
+		Once()
+
+	d := &discordMock{}
+	wantMessage := "<@3> Aucun rappel disponible"
+	d.On("SendMessage", wantMessage).Return(&discord.Message{}, errors.New("boom")).Once()
+
+	b := Bot{discord: d, store: s}
+	b = setupBot(t, b)
+	b.ListReminds(ctx, "3")
+
+	s.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestHandler_ListReminds_storeError(t *testing.T) {
+	ctx := context.Background()
+
+	s := &storeMock{}
+	s.On("ListRemindsByID", "3").
+		Return([]store.Remind{}, errors.New("boom")).
+		Once()
+
+	b := Bot{store: s}
+	b = setupBot(t, b)
+	b.ListReminds(ctx, "3")
+
+	s.AssertExpectations(t)
+}
+
+func TestHandler_ListReminds_sendMessageError(t *testing.T) {
+	ctx := context.Background()
+
+	s := &storeMock{}
+	s.On("ListRemindsByID", "3").
+		Return([]store.Remind{
+			{PetName: "Chacha", Character: "Test", NextRemind: time.Time{}},
+			{PetName: "Nomoon", Character: "Test2", NextRemind: time.Time{}.Add(time.Hour)},
+		}, nil).
+		Once()
+
+	d := &discordMock{}
+	wantMessage := `<@3> Liste de vos rappels:
+  - 000000000000000000000000 - Chacha sur Test - Prochain rappel: Mon, 01 Jan 0001 00:09:21 LMT
+  - 000000000000000000000000 - Nomoon sur Test2 - Prochain rappel: Mon, 01 Jan 0001 01:09:21 LMT`
+	d.On("SendMessage", wantMessage).Return(&discord.Message{}, errors.New("boom")).Once()
+
+	b := Bot{discord: d, store: s}
+	b = setupBot(t, b)
+	b.ListReminds(ctx, "3")
+
+	s.AssertExpectations(t)
+	d.AssertExpectations(t)
 }

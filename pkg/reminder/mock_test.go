@@ -18,7 +18,7 @@ func (s *storerMock) GetPet(_ context.Context, name string) (store.Pet, error) {
 	return ret.Get(0).(store.Pet), ret.Error(1)
 }
 
-func (s *storerMock) ListReminds(_ context.Context) ([]store.Remind, error) {
+func (s *storerMock) ListAllReminds(_ context.Context) ([]store.Remind, error) {
 	ret := s.Called()
 
 	return ret.Get(0).([]store.Remind), ret.Error(1)

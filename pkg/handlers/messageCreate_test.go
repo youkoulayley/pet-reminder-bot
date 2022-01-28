@@ -33,6 +33,21 @@ func TestHandler_MessageCreate_unknownCommand(t *testing.T) {
 	b.AssertExpectations(t)
 }
 
+func TestHandler_MessageCreate_listRemindsCommand(t *testing.T) {
+	b := &botMock{}
+	b.On("ListReminds", "3").Once()
+
+	h := Handler{
+		bot:     b,
+		botUser: discord.User{ID: "2"},
+	}
+
+	msg := &discord.Message{Content: "!list", Author: discord.User{ID: "3"}}
+	h.MessageCreate(msg)
+
+	b.AssertExpectations(t)
+}
+
 func TestHandler_MessageCreate_listPetsCommand(t *testing.T) {
 	b := &botMock{}
 	b.On("ListPets").Once()
