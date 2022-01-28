@@ -7,12 +7,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/skwair/harmony"
 	"github.com/urfave/cli/v2"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/bot"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/handlers"
+	"github.com/youkoulayley/pet-reminder-bot/pkg/logger"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/reminder"
 	"github.com/youkoulayley/pet-reminder-bot/pkg/store"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,12 +22,9 @@ import (
 const databaseName = "pet-reminder-bot"
 
 func run(ctx *cli.Context) error {
-	level, err := zerolog.ParseLevel(ctx.String(flagLogLevel))
-	if err != nil {
-		return fmt.Errorf("parse log level: %w", err)
+	if err := logger.Setup(ctx.String(flagLogLevel), ctx.String(flagLogFormat)); err != nil {
+		return fmt.Errorf("setup logger: %w", err)
 	}
-
-	zerolog.SetGlobalLevel(level)
 
 	discordClient, err := harmony.NewClient(ctx.String(flagBotToken))
 	if err != nil {

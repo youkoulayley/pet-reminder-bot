@@ -28,6 +28,12 @@ type storeMock struct {
 	mock.Mock
 }
 
+func (s *storeMock) ListRemindsByID(_ context.Context, id string) ([]store.Remind, error) {
+	ret := s.Called(id)
+
+	return ret.Get(0).([]store.Remind), ret.Error(1)
+}
+
 func (s *storeMock) ListPets(_ context.Context) (store.Pets, error) {
 	ret := s.Called()
 

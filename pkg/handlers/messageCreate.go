@@ -26,6 +26,8 @@ func (h *Handler) MessageCreate(m *discord.Message) {
 	switch {
 	case strings.HasPrefix(m.Content, "!familiers"):
 		h.bot.ListPets(ctx)
+	case strings.HasPrefix(m.Content, "!list"):
+		h.bot.ListReminds(ctx, m.Author.ID)
 	case strings.HasPrefix(m.Content, "!remind"):
 		cfg, err := h.handleRemindConfig(m)
 		if err != nil {

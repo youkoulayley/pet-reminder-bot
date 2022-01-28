@@ -33,7 +33,7 @@ func TestReminder_SetUpdate(t *testing.T) {
 
 func TestReminder_Process_loadRemindsError(t *testing.T) {
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{}, errors.New("boom")).Once()
+	s.On("ListAllReminds").Return([]store.Remind{}, errors.New("boom")).Once()
 
 	r, err := New(s, nil)
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestReminder_Process_sendRemind(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Twice()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Twice()
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
@@ -87,7 +87,7 @@ func TestReminder_Process_sendRemind_sendMessageError(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Once()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Once()
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
@@ -115,7 +115,7 @@ func TestReminder_Process_sendRemind_updateRemindError(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Once()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Once()
 
 	d := &discordMock{}
 	d.On("SendMessage", fmt.Sprintf("<@discordUser> Il faut nourrir \"pet\" sur character\nID: %s", id.Hex())).
@@ -153,7 +153,7 @@ func TestReminder_Process_sendTimeoutRemind(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Twice()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Twice()
 	s.On("GetPet", "pet").Return(pet, nil).Once()
 
 	updatedRemind := remind
@@ -221,7 +221,7 @@ func TestReminder_Process_sendTimeoutRemind_getPetError(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Once()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Once()
 	s.On("GetPet", "pet").Return(store.Pet{}, errors.New("boom")).Once()
 
 	r, err := New(s, nil)
@@ -250,7 +250,7 @@ func TestReminder_Process_sendTimeoutRemind_updateRemindError(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Once()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Once()
 	s.On("GetPet", "pet").Return(pet, nil).Once()
 
 	updatedRemind := remind
@@ -298,7 +298,7 @@ func TestReminder_Process_sendTimeoutRemind_sendMessageError(t *testing.T) {
 	}
 
 	s := &storerMock{}
-	s.On("ListReminds").Return([]store.Remind{remind}, nil).Twice()
+	s.On("ListAllReminds").Return([]store.Remind{remind}, nil).Twice()
 	s.On("GetPet", "pet").Return(pet, nil).Once()
 
 	updatedRemind := remind

@@ -55,9 +55,18 @@ func (s *Store) UpdateRemind(ctx context.Context, remind Remind) error {
 	return nil
 }
 
-// ListReminds lists all the reminds.
-func (s *Store) ListReminds(ctx context.Context) ([]Remind, error) {
-	res, err := s.reminds.Find(ctx, bson.D{})
+// ListAllReminds lists all the reminds.
+func (s *Store) ListAllReminds(ctx context.Context) ([]Remind, error) {
+	return s.listReminds(ctx, bson.D{})
+}
+
+// ListRemindsByID lists all the reminds for the given user ID.
+func (s *Store) ListRemindsByID(ctx context.Context, id string) ([]Remind, error) {
+	return s.listReminds(ctx, bson.D{{Key: "discordUserId", Value: id}})
+}
+
+func (s *Store) listReminds(ctx context.Context, filter bson.D) ([]Remind, error) {
+	res, err := s.reminds.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("find reminds: %w", err)
 	}

@@ -35,6 +35,7 @@ type Storer interface {
 	UpdateRemind(ctx context.Context, remind store.Remind) error
 	GetRemind(ctx context.Context, id string) (store.Remind, error)
 	RemoveRemind(ctx context.Context, id string) error
+	ListRemindsByID(ctx context.Context, id string) ([]store.Remind, error)
 }
 
 // Reminder is capable of interacting with the reminder.
